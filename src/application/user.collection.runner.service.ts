@@ -6,7 +6,7 @@ import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { count: 0, lastKey: undefined, batchSize: 2, listenerAttached: false };
+    record = { lastKey: undefined, batchSize: 2, listenerAttached: false };
     constructor(
         @Inject(FirebaseAdminRepository) private firebaseAdminRepository: FirebaseAdminRepository,
         @Inject(OperationRecordService) private operationRecordService: OperationRecordService,
@@ -57,14 +57,13 @@ export class UserCollectionRunnerService {
         try {
             const snapshot = await query.once('value');
 
-            if (!snapshot.val() || this.record.count > 2) {
+            if (!snapshot.val()) {
                 this.operationRecordService.setOperationRecordStatus(OperationRecordStatus.DONE);
                 // When there are no documents left, we are done
                 resolve();
                 return;
             }
 
-            this.record.count += 1;
             // Update user email
             snapshot.forEach(userSnapShot => {
                 const userEntity = userSnapShot.val();
