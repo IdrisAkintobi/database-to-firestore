@@ -1,8 +1,10 @@
-import { Controller, Get, Inject, Post } from '@nestjs/common';
+import { Controller, Get, Inject, Post, UseGuards } from '@nestjs/common';
 import { OperationRecordService } from './application/operation.record.service';
 import { UserCollectionRunnerService } from './application/user.collection.runner.service';
+import { AuthGuard } from './guard/auth-guard';
 
-@Controller()
+@UseGuards(AuthGuard)
+@Controller('/')
 export class AppController {
     constructor(
         @Inject(OperationRecordService)
