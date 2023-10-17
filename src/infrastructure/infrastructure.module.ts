@@ -6,7 +6,7 @@ import { DbModule } from './db/db.module';
 @Module({
     imports: [DbModule],
     providers: [ConfigService],
-    exports: [DbModule],
+    exports: [DbModule, ConfigService],
 })
 export class InfrastructureModule implements OnApplicationBootstrap {
     constructor(@Inject(ConfigService) private readonly configService: ConfigService) {}

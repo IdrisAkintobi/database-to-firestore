@@ -10,3 +10,7 @@ export const gCloudServiceAccountSchema = z.object({
     privateKey: z.string(),
     clientEmail: z.string().email(),
 });
+
+export const apiKeySchema = z.object({
+    apiKey: z.string(),
+});

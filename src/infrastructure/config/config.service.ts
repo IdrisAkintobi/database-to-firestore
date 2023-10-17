@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { ZodErrorParser } from '../utils/zod.error.parser';
-import { firebaseConfigSchema, gCloudServiceAccountSchema } from './config-schema';
+import { apiKeySchema, firebaseConfigSchema, gCloudServiceAccountSchema } from './config-schema';
 
 const getFirebaseConfigFromEnv = () => {
     try {
@@ -26,13 +26,25 @@ const getGCloudServiceAccountFromEnv = () => {
     }
 };
 
+const getApiKeyFromEnv = () => {
+    try {
+        return apiKeySchema.parse({
+            apiKey: process.env.API_KEY,
+        });
+    } catch (e) {
+        ZodErrorParser(e);
+    }
+};
+
 @Injectable()
 export class ConfigService {
     private _getFirebaseConfig: z.infer<typeof firebaseConfigSchema>;
     private _getGCloudServiceAccount: z.infer<typeof gCloudServiceAccountSchema>;
+    private _getApiKey: z.infer<typeof apiKeySchema>;
     constructor() {
         this._getFirebaseConfig = getFirebaseConfigFromEnv();
         this._getGCloudServiceAccount = getGCloudServiceAccountFromEnv();
+        this._getApiKey = getApiKeyFromEnv();
     }
 
     getFirebaseConfig() {
@@ -41,5 +53,9 @@ export class ConfigService {
 
     getGCloudServiceAccount() {
         return this._getGCloudServiceAccount;
+    }
+
+    getApiKey() {
+        return this._getApiKey;
     }
 }
