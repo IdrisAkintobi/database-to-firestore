@@ -6,7 +6,7 @@ import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { lastKey: undefined, batchSize: 2, listenerAttached: false };
+    record = { lastKey: undefined, batchSize: 1000, listenerAttached: false };
     constructor(
         @Inject(FirebaseAdminRepository) private firebaseAdminRepository: FirebaseAdminRepository,
         @Inject(OperationRecordService) private operationRecordService: OperationRecordService,

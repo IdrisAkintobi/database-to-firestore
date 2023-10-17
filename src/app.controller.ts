@@ -1,9 +1,8 @@
-import { Controller, Get, Inject, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Inject, Post, UseGuards } from '@nestjs/common';
 import { OperationRecordService } from './application/operation.record.service';
 import { UserCollectionRunnerService } from './application/user.collection.runner.service';
 import { AuthGuard } from './guard/auth-guard';
 
-@UseGuards(AuthGuard)
 @Controller('/')
 export class AppController {
     constructor(
@@ -13,11 +12,19 @@ export class AppController {
         private readonly userCollectionRunnerService: UserCollectionRunnerService,
     ) {}
 
+    @Get('/')
+    @HttpCode(HttpStatus.OK)
+    getHello(): string {
+        return 'ok';
+    }
+
+    @UseGuards(AuthGuard)
     @Get('status')
     getOperationRecord(): { rejected: number; fulfilled: number } {
         return this.operationRecordService.getOperationRecord();
     }
 
+    @UseGuards(AuthGuard)
     @Post('update-collection')
     async updateCollection(): Promise<void> {
         await this.userCollectionRunnerService.updateUserCollection();
