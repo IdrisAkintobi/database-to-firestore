@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { database } from 'firebase-admin';
 
-import { AbstractUser } from '../../../domain/abstract-user';
-import { UserRepositoryInterface } from '../../../domain/interface/user-repository.interface';
-import { User } from '../../../domain/user';
+import { AbstractUser } from '../../../../domain/abstract-user';
+import { UserRepositoryInterface } from '../../../../domain/interface/user-repository.interface';
+import { User } from '../../../../domain/user';
 import { UserEntity } from '../entity/user.entity';
 import { UserEntityMapper } from '../mapper/user-entity.mapper';
 import { FirebaseRepository } from './firebase-repository';

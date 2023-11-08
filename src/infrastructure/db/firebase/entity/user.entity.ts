@@ -1,6 +1,6 @@
-import { Network } from '../../../domain/enum/network';
-import { Country } from '../../../domain/enum/country';
-import { UserSubscription } from '../../../domain/user-subscription';
+import { Country } from '../../../../domain/enum/country';
+import { Network } from '../../../../domain/enum/network';
+import { UserSubscription } from '../../../../domain/user-subscription';
 
 type UserEntity = {
     id: string;

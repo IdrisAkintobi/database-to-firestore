@@ -11,6 +11,14 @@ export const gCloudServiceAccountSchema = z.object({
     clientEmail: z.string().email(),
 });
 
+export const postgresConfigSchema = z.object({
+    host: z.string(),
+    port: z.number(),
+    username: z.string(),
+    password: z.string(),
+    database: z.string(),
+});
+
 export const apiKeySchema = z.object({
     apiKey: z.string(),
 });

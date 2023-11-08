@@ -1,7 +1,7 @@
-import { User } from '../../../domain/user';
+import { AbstractUser } from '../../../../domain/abstract-user';
+import { AnonymousUser } from '../../../../domain/anonymous-user';
+import { User } from '../../../../domain/user';
 import { UserEntity } from '../entity/user.entity';
-import { AbstractUser } from '../../../domain/abstract-user';
-import { AnonymousUser } from '../../../domain/anonymous-user';
 
 export class UserEntityMapper {
     static map(user: AbstractUser): UserEntity {

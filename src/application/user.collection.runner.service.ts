@@ -1,15 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { database } from 'firebase-admin';
+import { UserRepository } from 'src/infrastructure/db/postgres/repositories/user-repository';
 import { OperationRecordStatus } from '../domain/enum/operation-record.dto';
-import { FirebaseAdminRepository } from '../infrastructure/db/repository/firebase-admin';
+import { FirebaseAdminRepository } from '../infrastructure/db/firebase/repository/firebase-admin';
 import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { lastKey: undefined, batchSize: 1000, listenerAttached: false };
+    record = { lastKey: undefined, batchSize: 100, listenerAttached: false, count: 0 };
     constructor(
         @Inject(FirebaseAdminRepository) private firebaseAdminRepository: FirebaseAdminRepository,
         @Inject(OperationRecordService) private operationRecordService: OperationRecordService,
+        @Inject('UserRepository') private userRepository: UserRepository,
     ) {}
 
     async updateUserCollection() {
@@ -57,25 +59,35 @@ export class UserCollectionRunnerService {
         try {
             const snapshot = await query.once('value');
 
-            if (!snapshot.val()) {
+            if (!snapshot.val() || this.record.count > 0) {
                 this.operationRecordService.setOperationRecordStatus(OperationRecordStatus.DONE);
                 // When there are no documents left, we are done
+                collectionRef.off('child_added');
                 resolve();
                 return;
             }
 
             // Update user email
-            snapshot.forEach(userSnapShot => {
-                const userEntity = userSnapShot.val();
-                this.operationRecordService.updateCollectionSchema('users', userEntity);
-                this.record.lastKey = userSnapShot.key;
-                if (userEntity?.email && this.isRegularEmail(userEntity.email)) {
-                    promiseArray.push(
-                        // this.firebaseAdminRepository.updateUserEmail(userEntity.id, userEntity.email),
-                        Promise.resolve(),
-                    );
-                }
-            });
+            // snapshot.forEach(userSnapShot => {
+            //     const userEntity = userSnapShot.val();
+            //     // this.operationRecordService.updateCollectionSchema('users', userEntity);
+            //     this.record.lastKey = userSnapShot.key;
+            //     if (userEntity) {
+            //         // if (userEntity?.email && this.isRegularEmail(userEntity.email)) {
+            //         promiseArray.push(
+            //             // this.firebaseAdminRepository.updateUserEmail(userEntity.id, userEntity.email),
+            //             // Promise.resolve(),
+            //             this.userRepository.save(userEntity),
+            //         );
+            //         this.record.count += 1;
+            //     }
+            // });
+
+            // Get an array of the userEntity from snapshot
+            const userEntities = Object.values(snapshot.val());
+            this.record.lastKey = Object.keys(snapshot.val()).pop();
+            promiseArray.push(this.userRepository.saveAll(userEntities as any));
+            this.record.count += 1;
         } catch (error) {
             console.log('error', error);
             this.operationRecordService.setOperationRecordStatus(OperationRecordStatus.DONE);

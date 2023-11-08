@@ -5,4 +5,4 @@ import { FirebaseAdminRepository } from './repository/firebase-admin';
     providers: [FirebaseAdminRepository],
     exports: [FirebaseAdminRepository],
 })
-export class DbModule {}
+export class FirebaseDbModule {}
