@@ -1,6 +1,6 @@
+import { AbstractUser } from './abstract-user';
 import { Country } from './enum/country';
 import { Network } from './enum/network';
-import { AbstractUser } from './abstract-user';
 
 type UserParams = {
     userId: string;
