@@ -1,108 +1,80 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { database } from 'firebase-admin';
-import { UserRepository } from 'src/infrastructure/db/postgres/repositories/user-repository';
+
 import { OperationRecordStatus } from '../domain/enum/operation-record.dto';
 import { FirebaseAdminRepository } from '../infrastructure/db/firebase/repository/firebase-admin';
+import { UsersFirestoreRepository } from '../infrastructure/db/firebase/repository/user.firestore.repository';
+import { UserDto } from '../infrastructure/db/mysql/dto/user/user.dto';
+import { UserRepository } from '../infrastructure/db/mysql/repositories/user-repository';
 import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { lastKey: undefined, batchSize: 100, listenerAttached: false, count: 0 };
+    record = { lastKey: '', batchSize: 100 };
+    private collectionRef: database.Query;
+
     constructor(
         @Inject(FirebaseAdminRepository) private firebaseAdminRepository: FirebaseAdminRepository,
+        private usersFirestoreRepository: UsersFirestoreRepository,
         @Inject(OperationRecordService) private operationRecordService: OperationRecordService,
         @Inject('UserRepository') private userRepository: UserRepository,
     ) {}
 
     async updateUserCollection() {
-        const db = database();
-        const collectionRef = db.ref('users');
-        this.operationRecordService.setOperationRecordStatus(OperationRecordStatus.RUNNING);
-
-        // add listener for newly added user
-        if (!this.record.listenerAttached) {
-            collectionRef
-                .orderByChild('created_on')
-                .startAt(Date.now())
-                .on('child_added', snapshot => {
-                    const userEntity = snapshot.val();
-                    this.operationRecordService.addNewRecord(userEntity);
-                });
-            this.record.listenerAttached = true;
+        if (!this.collectionRef) {
+            this.collectionRef = database().ref('users').orderByKey();
         }
 
-        // Log the number of documents in the collection
-        // const collectionCount = (await collectionRef.get()).numChildren();
-        // console.log(`${collectionCount} documents collection.`);
-
-        return new Promise((resolve, reject) => {
-            this.updateQueryBatch(collectionRef, resolve).catch(reject);
+        await this.operationRecordService.updateOperationRecord({
+            status: OperationRecordStatus.RUNNING,
         });
-    }
 
-    private async updateQueryBatch(
-        collectionRef: database.Reference,
-        resolve: (value?: unknown) => void,
-    ) {
-        let query: database.Query;
-
-        if (this.record.lastKey) {
-            query = collectionRef
-                .orderByKey()
-                .startAfter(`${this.record.lastKey}`)
-                .limitToFirst(this.record.batchSize + 1);
-        } else {
-            query = collectionRef.orderByKey().limitToFirst(this.record.batchSize);
-        }
-
-        const promiseArray = [];
         try {
-            const snapshot = await query.once('value');
-
-            if (!snapshot.val() || this.record.count > 0) {
-                this.operationRecordService.setOperationRecordStatus(OperationRecordStatus.DONE);
-                // When there are no documents left, we are done
-                collectionRef.off('child_added');
-                resolve();
-                return;
-            }
-
-            // Update user email
-            // snapshot.forEach(userSnapShot => {
-            //     const userEntity = userSnapShot.val();
-            //     // this.operationRecordService.updateCollectionSchema('users', userEntity);
-            //     this.record.lastKey = userSnapShot.key;
-            //     if (userEntity) {
-            //         // if (userEntity?.email && this.isRegularEmail(userEntity.email)) {
-            //         promiseArray.push(
-            //             // this.firebaseAdminRepository.updateUserEmail(userEntity.id, userEntity.email),
-            //             // Promise.resolve(),
-            //             this.userRepository.save(userEntity),
-            //         );
-            //         this.record.count += 1;
-            //     }
-            // });
-
-            // Get an array of the userEntity from snapshot
-            const userEntities = Object.values(snapshot.val());
-            this.record.lastKey = Object.keys(snapshot.val()).pop();
-            promiseArray.push(this.userRepository.saveAll(userEntities as any));
-            this.record.count += 1;
+            await this.updateQueryBatch();
         } catch (error) {
             console.log('error', error);
-            this.operationRecordService.setOperationRecordStatus(OperationRecordStatus.DONE);
-            resolve();
-            return;
+            await this.operationRecordService.updateOperationRecord({
+                status: OperationRecordStatus.ERROR,
+                message: error['message'],
+            });
         }
+    }
 
-        const result = await Promise.allSettled(promiseArray);
-        this.operationRecordService.updateOperationRecord(result);
+    private async updateQueryBatch() {
+        let query: database.Query;
 
-        // Recurse on the next process tick, to avoid
-        // exploding the stack.
-        process.nextTick(() => {
-            this.updateQueryBatch(collectionRef, resolve);
-        });
+        while (true) {
+            try {
+                if (this.record.lastKey) {
+                    query = this.collectionRef
+                        .startAfter(`${this.record.lastKey}`)
+                        .limitToFirst(this.record.batchSize + 1);
+                } else {
+                    query = this.collectionRef.limitToFirst(this.record.batchSize);
+                }
+
+                const snapshot = await query.once('value');
+                const usersData = snapshot.val();
+                const userEntities = Object.values(usersData) as UserDto[];
+
+                if (!snapshot.val() || userEntities.length === 0) {
+                    await this.operationRecordService.updateOperationRecord({
+                        status: OperationRecordStatus.DONE,
+                    });
+                    break;
+                }
+
+                await this.usersFirestoreRepository.saveMany(userEntities);
+                this.record.lastKey = userEntities[userEntities.length - 1].id;
+
+                await this.operationRecordService.updateOperationRecord({
+                    processed: userEntities.length,
+                    lastKey: this.record.lastKey,
+                });
+            } catch (error) {
+                throw error;
+            }
+        }
     }
 
     private isRegularEmail(email: string) {

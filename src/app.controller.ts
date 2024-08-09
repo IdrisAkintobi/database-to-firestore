@@ -1,6 +1,7 @@
 import { Controller, Get, HttpCode, HttpStatus, Inject, Post, UseGuards } from '@nestjs/common';
 import { OperationRecordService } from './application/operation.record.service';
 import { UserCollectionRunnerService } from './application/user.collection.runner.service';
+import { OperationRecordType } from './domain/enum/operation-record.dto';
 import { AuthGuard } from './guard/auth-guard';
 
 @Controller('/')
@@ -20,7 +21,7 @@ export class AppController {
 
     @UseGuards(AuthGuard)
     @Get('status')
-    getOperationRecord(): { rejected: number; fulfilled: number } {
+    getOperationRecord(): OperationRecordType {
         return this.operationRecordService.getOperationRecord();
     }
 

@@ -1,41 +1,40 @@
 import { Injectable } from '@nestjs/common';
+import { firestore } from 'firebase-admin';
 import { OperationRecordStatus, OperationRecordType } from '../domain/enum/operation-record.dto';
+import { FirestoreRepository } from '../infrastructure/db/firebase/repository/firestore-repository';
 
 @Injectable()
-export class OperationRecordService {
-    private readonly operationRecord: OperationRecordType = {
-        rejected: 0,
-        fulfilled: 0,
+export class OperationRecordService extends FirestoreRepository {
+    private collectionRef: firestore.CollectionReference;
+    private operationRecord: OperationRecordType = {
+        lastKey: '',
+        processed: 0,
+        date: new Date().toLocaleDateString('en-US').replaceAll('/', '-') + '_' + process.ppid,
         status: OperationRecordStatus.IDLE,
+        message: '',
         newRecords: [],
         collectionSchema: {},
     };
 
+    private async save(): Promise<void> {
+        if (!this.collectionRef) this.collectionRef = firestore().collection('runner_status_test');
+        await this.collectionRef.doc(this.operationRecord.date).set(this.operationRecord);
+    }
+
     getOperationRecord() {
-        return {
+        return this.operationRecord;
+    }
+
+    async updateOperationRecord(updateData: Partial<Omit<OperationRecordType, 'date'>>) {
+        this.operationRecord = {
             ...this.operationRecord,
-            total: this.operationRecord.fulfilled + this.operationRecord.rejected,
+            ...updateData,
+            processed: this.operationRecord.processed + (updateData.processed || 0),
         };
+        await this.save();
     }
 
-    // create method that accepts return value of promise.allSettled and add to operation record
-    updateOperationRecord(promiseAllSettledResult: PromiseSettledResult<any>[]) {
-        const fulfilled = promiseAllSettledResult.filter(result => result.status === 'fulfilled');
-        const rejected = promiseAllSettledResult.filter(result => result.status === 'rejected');
-
-        this.operationRecord.fulfilled = this.operationRecord.fulfilled += fulfilled.length;
-        this.operationRecord.rejected = this.operationRecord.rejected += rejected.length;
-    }
-
-    setOperationRecordStatus(status: OperationRecordStatus) {
-        this.operationRecord.status = status;
-    }
-
-    addNewRecord(record: any) {
-        this.operationRecord.newRecords.push(record);
-    }
-
-    updateCollectionSchema(
+    async updateCollectionSchema(
         objKey: string,
         entity: Record<string, any>,
         objRef = this.operationRecord.collectionSchema,
@@ -52,5 +51,6 @@ export class OperationRecordService {
                 }
             }
         }
+        await this.save();
     }
 }
