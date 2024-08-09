@@ -2,9 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import {
     apiKeySchema,
+    dbConfigSchema,
     firebaseConfigSchema,
     gCloudServiceAccountSchema,
-    postgresConfigSchema,
 } from './config-schema';
 import { ZodErrorParser } from './zod.error.parser';
 
@@ -31,9 +31,9 @@ const getGCloudServiceAccountFromEnv = (env: NodeJS.ProcessEnv) => {
     }
 };
 
-const getPostgresConfigFromEnv = (env: NodeJS.ProcessEnv) => {
+const getDbConfigFromEnv = (env: NodeJS.ProcessEnv) => {
     try {
-        return postgresConfigSchema.parse({
+        return dbConfigSchema.parse({
             host: env.DB_HOST,
             port: parseInt(env.DB_PORT, 10),
             username: env.DB_USERNAME,
@@ -60,12 +60,12 @@ export class ConfigurationService {
     private _getFirebaseConfig: z.infer<typeof firebaseConfigSchema>;
     private _getGCloudServiceAccount: z.infer<typeof gCloudServiceAccountSchema>;
     private _getApiKey: z.infer<typeof apiKeySchema>;
-    private _getPostgresConfig: z.infer<typeof postgresConfigSchema>;
+    private _getDbConfig: z.infer<typeof dbConfigSchema>;
     constructor(@Inject('process.env') private env: NodeJS.ProcessEnv) {
         this._getFirebaseConfig = getFirebaseConfigFromEnv(env);
         this._getGCloudServiceAccount = getGCloudServiceAccountFromEnv(env);
         this._getApiKey = getApiKeyFromEnv(env);
-        this._getPostgresConfig = getPostgresConfigFromEnv(env);
+        this._getDbConfig = getDbConfigFromEnv(env);
     }
 
     getFirebaseConfig() {
@@ -80,7 +80,7 @@ export class ConfigurationService {
         return this._getApiKey;
     }
 
-    getPostgresConfig() {
-        return this._getPostgresConfig;
+    getDbConfig() {
+        return this._getDbConfig;
     }
 }

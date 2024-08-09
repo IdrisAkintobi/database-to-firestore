@@ -1,15 +1,17 @@
+import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { ConfigurationService } from '../../../infrastructure/utils/config.service';
-import { UtilModule } from '../../../infrastructure/utils/util.module';
+import { ConfigurationService } from '../../utils/config.service';
+import { UtilModule } from '../../utils/util.module';
+import { DatabaseCreationService } from './database-creation.service';
 
-export const DatabaseModule = TypeOrmModule.forRootAsync({
+const DatabaseRootModule = TypeOrmModule.forRootAsync({
     imports: [UtilModule],
     useFactory: async (configService: ConfigurationService) => {
-        const dbConfig = configService.getPostgresConfig();
+        const dbConfig = configService.getDbConfig();
 
         return {
-            type: 'postgres',
+            type: 'mysql',
             host: dbConfig.host,
             port: dbConfig.port,
             username: dbConfig.username,
@@ -27,3 +29,15 @@ export const DatabaseModule = TypeOrmModule.forRootAsync({
     },
     inject: ['ConfigurationService'],
 });
+
+@Module({
+    imports: [DatabaseRootModule],
+    providers: [DatabaseCreationService],
+    exports: [DatabaseCreationService],
+})
+export class DatabaseModule implements OnModuleInit {
+    constructor(private readonly databaseCreationService: DatabaseCreationService) {}
+    async onModuleInit() {
+        // await this.databaseCreationService.init();
+    }
+}

@@ -11,7 +11,7 @@ export const gCloudServiceAccountSchema = z.object({
     clientEmail: z.string().email(),
 });
 
-export const postgresConfigSchema = z.object({
+export const dbConfigSchema = z.object({
     host: z.string(),
     port: z.number(),
     username: z.string(),

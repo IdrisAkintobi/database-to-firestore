@@ -20,7 +20,7 @@
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "typeorm": "ts-node ./node_modules/.bin/typeorm",
         "typeorm:generate-migration": "npm run typeorm migration:generate -- -n update",
-        "typeorm:run": "npm run typeorm migration:run",
+        "typeorm:run": "npm run typeorm migration:run -- -d ./src/infrastructure/db/postgres/datasource.ts",
         "typeorm:create-migration": "npm run typeorm migration:create -- -n manual-migration"
     },
     "dependencies": {
@@ -32,8 +32,8 @@
         "axios": "^1.6.0",
         "dotenv": "^16.3.1",
         "firebase-admin": "^11.11.0",
+        "mysql2": "^3.11.0",
         "nest-winston": "^1.9.4",
-        "pg": "^8.11.3",
         "reflect-metadata": "^0.1.13",
         "rxjs": "^7.8.1",
         "typeorm": "^0.3.17",

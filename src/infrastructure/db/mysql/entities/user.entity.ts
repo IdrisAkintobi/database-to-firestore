@@ -74,7 +74,7 @@ export class UserEntity {
     @Column({ type: 'varchar', name: 'nunchee_id' })
     nuncheeId?: string;
 
-    @Column({ type: 'jsonb', name: 'billing_account' })
+    @Column({ type: 'json', name: 'billing_account' })
     billingAccount?: {
         email: string;
         full_name: string;
@@ -95,6 +95,6 @@ export class UserEntity {
     @Column({ type: 'varchar', name: 'alt_phone' })
     altPhone?: string;
 
-    @Column({ type: 'jsonb', name: 'used_vouchers' })
+    @Column({ type: 'json', name: 'used_vouchers' })
     usedVouchers?: Record<string, number>;
 }
