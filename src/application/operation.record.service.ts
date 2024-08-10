@@ -17,7 +17,7 @@ export class OperationRecordService extends FirestoreRepository {
     };
 
     private async save(): Promise<void> {
-        if (!this.collectionRef) this.collectionRef = firestore().collection('runner_status_test');
+        if (!this.collectionRef) this.collectionRef = firestore().collection('runner_status');
         await this.collectionRef.doc(this.operationRecord.date).set(this.operationRecord);
     }
 

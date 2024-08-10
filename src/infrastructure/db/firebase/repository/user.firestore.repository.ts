@@ -16,7 +16,7 @@ export class UsersFirestoreRepository
     async save(user: UserDto): Promise<void> {
         this.removeUndefinedFields(user);
 
-        const usersRef = firestore().collection('users_test').doc(user.id);
+        const usersRef = firestore().collection('users').doc(user.id);
 
         await usersRef.set(user);
     }
@@ -28,7 +28,7 @@ export class UsersFirestoreRepository
         });
 
         // save all users at once
-        const usersRef = firestore().collection('users_test');
+        const usersRef = firestore().collection('users');
         const batch = firestore().batch();
         users.forEach(user => {
             const userDocRef = usersRef.doc(user.id);
