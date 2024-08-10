@@ -10,7 +10,7 @@ import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { lastKey: '', batchSize: 100 };
+    record = { lastKey: process.env.LAST_KEY || '', batchSize: 1000 };
     private collectionRef: database.Query;
 
     constructor(
@@ -32,7 +32,6 @@ export class UserCollectionRunnerService {
         try {
             await this.updateQueryBatch();
         } catch (error) {
-            console.log('error', error);
             await this.operationRecordService.updateOperationRecord({
                 status: OperationRecordStatus.ERROR,
                 message: error['message'],
@@ -44,36 +43,32 @@ export class UserCollectionRunnerService {
         let query: database.Query;
 
         while (true) {
-            try {
-                if (this.record.lastKey) {
-                    query = this.collectionRef
-                        .startAfter(`${this.record.lastKey}`)
-                        .limitToFirst(this.record.batchSize + 1);
-                } else {
-                    query = this.collectionRef.limitToFirst(this.record.batchSize);
-                }
-
-                const snapshot = await query.once('value');
-                const usersData = snapshot.val();
-                const userEntities = Object.values(usersData) as UserDto[];
-
-                if (!snapshot.val() || userEntities.length === 0) {
-                    await this.operationRecordService.updateOperationRecord({
-                        status: OperationRecordStatus.DONE,
-                    });
-                    break;
-                }
-
-                await this.usersFirestoreRepository.saveMany(userEntities);
-                this.record.lastKey = userEntities[userEntities.length - 1].id;
-
-                await this.operationRecordService.updateOperationRecord({
-                    processed: userEntities.length,
-                    lastKey: this.record.lastKey,
-                });
-            } catch (error) {
-                throw error;
+            if (this.record.lastKey) {
+                query = this.collectionRef
+                    .startAfter(`${this.record.lastKey}`)
+                    .limitToFirst(this.record.batchSize + 1);
+            } else {
+                query = this.collectionRef.limitToFirst(this.record.batchSize);
             }
+
+            const snapshot = await query.once('value');
+            if (!snapshot.exists()) {
+                await this.operationRecordService.updateOperationRecord({
+                    status: OperationRecordStatus.DONE,
+                });
+                break;
+            }
+            const usersData = snapshot.val();
+            const userEntities = Object.values(usersData) as UserDto[];
+            const userEntitiesKey = Object.keys(usersData);
+
+            await this.usersFirestoreRepository.saveMany(userEntities, userEntitiesKey);
+            this.record.lastKey = userEntities[userEntities.length - 1].id;
+
+            await this.operationRecordService.updateOperationRecord({
+                processed: userEntities.length,
+                lastKey: this.record.lastKey,
+            });
         }
     }
 

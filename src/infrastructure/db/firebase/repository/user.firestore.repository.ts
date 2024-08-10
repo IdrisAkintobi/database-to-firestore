@@ -21,7 +21,7 @@ export class UsersFirestoreRepository
         await usersRef.set(user);
     }
 
-    async saveMany(users: UserDto[]): Promise<void> {
+    async saveMany(users: UserDto[], keys: string[]): Promise<void> {
         // remove undefined fields
         users.forEach(user => {
             this.removeUndefinedFields(user);
@@ -30,10 +30,10 @@ export class UsersFirestoreRepository
         // save all users at once
         const usersRef = firestore().collection('users');
         const batch = firestore().batch();
-        users.forEach(user => {
-            const userDocRef = usersRef.doc(user.id);
-            batch.set(userDocRef, user);
-        });
+        for (let i = 0; i < users.length; i++) {
+            const userDocRef = usersRef.doc(users[i].id || keys[i]);
+            batch.set(userDocRef, users[i]);
+        }
         await batch.commit();
     }
 
