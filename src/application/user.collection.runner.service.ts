@@ -62,7 +62,12 @@ export class UserCollectionRunnerService {
             const userEntities = Object.values(usersData) as UserDto[];
             const userEntitiesKey = Object.keys(usersData);
 
-            await this.usersFirestoreRepository.saveMany(userEntities, userEntitiesKey);
+            for (let i = 0; i < userEntities.length; i++) {
+                userEntities[i].id ??= userEntitiesKey[i];
+            }
+
+            // await this.usersFirestoreRepository.saveMany(userEntities, userEntitiesKey);
+            await this.userRepository.saveMany(userEntities);
             this.record.lastKey = userEntities[userEntities.length - 1].id;
 
             await this.operationRecordService.updateOperationRecord({

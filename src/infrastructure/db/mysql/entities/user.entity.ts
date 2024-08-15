@@ -1,100 +1,97 @@
 import { Column, Entity, Index } from 'typeorm';
 
-@Entity({ name: 'user' })
-@Index([
-    'userId',
-    'phoneNumber',
-    'email',
-    'createdOn',
-    'activePlan',
-    'recentSubscriptionDate',
-    'recentSubscriptionExpires',
-    'countryCode',
-    'countryDate',
-    'network',
-])
+@Entity({ name: 'users' })
 export class UserEntity {
-    @Column({ type: 'varchar', name: 'user_id', primary: true, default: 'uuid_generate_v4()' })
-    userId: string;
+    @Column({ type: 'varchar', primary: true, default: 'uuid_generate_v4()' })
+    id: string;
 
-    @Column({ type: 'varchar', length: 15, name: 'first_name' })
-    firstName?: string;
+    @Column({ type: 'varchar', length: 16, nullable: true })
+    first_name?: string;
 
-    @Column({ type: 'varchar', length: 15, name: 'last_name' })
-    lastName?: string;
+    @Column({ type: 'varchar', length: 16, nullable: true })
+    last_name?: string;
 
-    @Column({ type: 'varchar', length: 32, name: 'full_name' })
-    fullName?: string;
-
-    @Column({ type: 'varchar', length: 16, name: 'phone_number' })
-    phoneNumber?: string;
-
-    @Column({ type: 'varchar', length: 40 })
-    email?: string;
-
-    @Column({ type: 'bigint', name: 'created_on' })
-    createdOn?: number;
-
-    @Column({ type: 'varchar', length: 32, name: 'active_plan' })
-    activePlan?: string;
-
-    @Column({ type: 'varchar', length: 32, name: 'active_plan_id' })
-    activePlanId?: string;
-
-    @Column({ type: 'varchar', length: 32 })
-    subscription?: string;
-
-    @Column({ type: 'bigint', name: 'recent_subscription_date' })
-    recentSubscriptionDate?: number;
-
-    @Column({ type: 'bigint', name: 'recent_subscription_expires' })
-    recentSubscriptionExpires?: number;
-
-    @Column({ type: 'bool', name: 'paid_user' })
-    paidUser?: boolean;
-
-    @Column({ type: 'varchar' })
-    provider?: string;
-
-    @Column({ type: 'varchar', name: 'provider_id' })
-    providerId?: string;
-
-    @Column({ type: 'varchar', name: 'provider_sub' })
-    providerSub?: string;
-
-    @Column({ type: 'varchar', name: 'country_code' })
-    countryCode?: string;
-
-    @Column({ type: 'varchar', name: 'country_date' })
-    countryDate: string;
+    @Column({ type: 'varchar', length: 32, nullable: true })
+    full_name?: string;
 
     @Column({ type: 'varchar', length: 16 })
+    @Index()
+    phone_number: string;
+
+    @Column({ type: 'varchar', length: 40, nullable: true })
+    @Index()
+    email?: string;
+
+    @Column({ type: 'bigint', default: Date.now() })
+    @Index()
+    created_on: number;
+
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    @Index()
+    active_plan?: string;
+
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    @Index()
+    active_plan_id?: string;
+
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    subscription?: string;
+
+    @Column({ type: 'bigint', nullable: true })
+    @Index()
+    recent_subscription_date?: number;
+
+    @Column({ type: 'bigint', nullable: true })
+    @Index()
+    recent_subscription_expires?: number;
+
+    @Column({ type: 'bool', nullable: true })
+    paid_user?: boolean;
+
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    provider?: string;
+
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    provider_id?: string;
+
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    provider_sub?: string;
+
+    @Column({ type: 'varchar', length: 12 })
+    @Index()
+    country_code: string;
+
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    country_date: string;
+
+    @Column({ type: 'varchar', length: 16, nullable: true })
+    @Index()
     network: string;
 
-    @Column({ type: 'varchar', name: 'nunchee_id' })
-    nuncheeId?: string;
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    nunchee_id?: string;
 
-    @Column({ type: 'json', name: 'billing_account' })
-    billingAccount?: {
+    @Column({ type: 'json', nullable: true })
+    billing_account?: {
         email: string;
         full_name: string;
     };
 
-    @Column({ type: 'varchar', name: 'external_provider_uid' })
-    externalProviderUID?: string;
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    external_provider_uid?: string;
 
-    @Column({ type: 'varchar', name: 'token_id' })
-    tokenId?: string;
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    token_id?: string;
 
-    @Column({ type: 'varchar', name: 'agent_code' })
-    agentCode?: string;
+    @Column({ type: 'varchar', length: 36, nullable: true })
+    agent_code?: string;
 
-    @Column({ type: 'varchar' })
+    @Column({ type: 'varchar', length: 36, nullable: true })
     referrer?: string;
 
-    @Column({ type: 'varchar', name: 'alt_phone' })
-    altPhone?: string;
+    @Column({ type: 'varchar', length: 16, nullable: true })
+    alt_phone?: string;
 
-    @Column({ type: 'json', name: 'used_vouchers' })
-    usedVouchers?: Record<string, number>;
+    @Column({ type: 'json', nullable: true })
+    used_vouchers?: Record<string, number>;
 }
