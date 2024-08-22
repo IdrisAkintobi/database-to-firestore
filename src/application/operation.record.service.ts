@@ -8,6 +8,7 @@ export class OperationRecordService extends FirestoreRepository {
     private collectionRef: firestore.CollectionReference;
     private operationRecord: OperationRecordType = {
         lastKey: '',
+        lastTimestamp: 0,
         processed: 0,
         date: new Date().toLocaleDateString('en-US').replaceAll('/', '-') + '_' + process.ppid,
         status: OperationRecordStatus.IDLE,

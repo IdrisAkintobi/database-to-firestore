@@ -5,6 +5,7 @@ export interface UserDto {
     full_name?: string;
     phone_number: string;
     email?: string;
+    created: number;
     created_on: number;
     active_plan?: string;
     active_plan_id?: string;

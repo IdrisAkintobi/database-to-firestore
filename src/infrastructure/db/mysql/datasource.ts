@@ -12,4 +12,5 @@ export const DBDataSource = new DataSource({
     synchronize: false,
     poolSize: 10,
     maxQueryExecutionTime: 1500,
+    charset: 'utf8mb4',
 });
