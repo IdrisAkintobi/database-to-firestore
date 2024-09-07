@@ -3,7 +3,7 @@ import { firestore } from 'firebase-admin';
 
 import { AbstractUser } from '../../../../domain/abstract-user';
 import { UserFirebaseRepositoryInterface } from '../../../../domain/interface/repositories/user-firestore-repository.interface';
-import { UserDto } from '../../mysql/dto/user/user.dto';
+import { UserDto } from '../../mysql/dto/user.dto';
 import { UserEntity } from '../entity/user.entity';
 import { UserEntityMapper } from '../mapper/user-entity.mapper';
 import { FirestoreRepository } from './firestore-repository';
@@ -44,5 +44,19 @@ export class UsersFirestoreRepository
         const user = this.getEntityFromQuerySnapshot<UserEntity>(userSnapshot);
 
         return UserEntityMapper.mapFromUserEntity(user);
+    }
+
+    // Add deleteMany function
+    async deleteMany(userIds: string[]): Promise<void> {
+        const usersRef = firestore().collection('users');
+        const batch = firestore().batch();
+
+        // Delete each user by their ID
+        for (const userId of userIds) {
+            const userDocRef = usersRef.doc(userId);
+            batch.delete(userDocRef);
+        }
+
+        await batch.commit(); // Commit the batch operation
     }
 }

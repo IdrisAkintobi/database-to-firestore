@@ -1,17 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { database } from 'firebase-admin';
-
+import { firestore } from 'firebase-admin';
 import { OperationRecordStatus } from '../domain/enum/operation-record.dto';
 import { FirebaseAdminRepository } from '../infrastructure/db/firebase/repository/firebase-admin';
 import { UsersFirestoreRepository } from '../infrastructure/db/firebase/repository/user.firestore.repository';
-import { UserDto } from '../infrastructure/db/mysql/dto/user/user.dto';
+import { UserDto } from '../infrastructure/db/mysql/dto/user.dto';
 import { UserRepository } from '../infrastructure/db/mysql/repositories/user-repository';
 import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { lastKey: process.env.LAST_KEY || '', batchSize: 1000 };
-    private collectionRef: database.Query;
+    record = { lastDate: +process.env.LAST_TIMESTAMP || 0, batchSize: 10 };
+    private collectionRef: firestore.CollectionReference;
 
     constructor(
         @Inject(FirebaseAdminRepository) private firebaseAdminRepository: FirebaseAdminRepository,
@@ -22,7 +21,7 @@ export class UserCollectionRunnerService {
 
     async updateUserCollection() {
         if (!this.collectionRef) {
-            this.collectionRef = database().ref('users').orderByKey();
+            this.collectionRef = firestore().collection('users');
         }
 
         await this.operationRecordService.updateOperationRecord({
@@ -40,45 +39,58 @@ export class UserCollectionRunnerService {
     }
 
     private async updateQueryBatch() {
-        let query: database.Query;
+        let query: firestore.Query;
+
+        const startDate = 0; // Starting from January 1st, 2024
 
         while (true) {
-            if (this.record.lastKey) {
+            if (this.record.lastDate) {
                 query = this.collectionRef
-                    .startAfter(`${this.record.lastKey}`)
-                    .limitToFirst(this.record.batchSize + 1);
+                    .where('created_on', '>', this.record.lastDate)
+                    .orderBy('created_on')
+                    .limit(this.record.batchSize);
             } else {
-                query = this.collectionRef.limitToFirst(this.record.batchSize);
+                query = this.collectionRef
+                    .where('created_on', '>=', startDate)
+                    .orderBy('created_on')
+                    .limit(this.record.batchSize);
             }
 
-            const snapshot = await query.once('value');
-            if (!snapshot.exists()) {
+            const snapshot = await query.get();
+            if (snapshot.empty) {
                 await this.operationRecordService.updateOperationRecord({
                     status: OperationRecordStatus.DONE,
                 });
                 break;
             }
-            const usersData = snapshot.val();
-            const userEntities = Object.values(usersData) as UserDto[];
-            const userEntitiesKey = Object.keys(usersData);
 
-            for (let i = 0; i < userEntities.length; i++) {
-                userEntities[i].id ??= userEntitiesKey[i];
-            }
+            const userEntities: UserDto[] = [];
+            const usersUid: { uid: string }[] = [];
+            snapshot.forEach(doc => {
+                const data = doc.data() as UserDto;
+                usersUid.push({ uid: doc.id });
+                data.id = doc.id;
+                userEntities.push(data);
+            });
 
-            // await this.usersFirestoreRepository.saveMany(userEntities, userEntitiesKey);
-            await this.userRepository.saveMany(userEntities);
-            this.record.lastKey = userEntities[userEntities.length - 1].id;
+            // await this.subscriptionRepository.saveMany(userEntities);
+
+            const authUsers = await this.firebaseAdminRepository.getUsers(usersUid);
+            //@ts-expect-error: uid will always be present
+            const uidToDeleteArray = authUsers.notFound.map(({ uid }) => uid);
+            await this.usersFirestoreRepository.deleteMany(uidToDeleteArray);
+
+            this.record.lastDate = userEntities[userEntities.length - 1].created_on;
 
             await this.operationRecordService.updateOperationRecord({
                 processed: userEntities.length,
-                lastKey: this.record.lastKey,
+                deleted: uidToDeleteArray.length,
+                lastTimestamp: this.record.lastDate,
             });
         }
     }
 
     private isRegularEmail(email: string) {
-        // ensure email is not a like of +2348068098631@wi-flix
         const [emailId, domain] = email.split('@');
         return !domain.match(/wi-flix.com$/) && !emailId.match(/^\+\d+$/);
     }

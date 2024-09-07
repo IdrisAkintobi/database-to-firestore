@@ -2,6 +2,7 @@ export type OperationRecordType = {
     lastKey: string;
     lastTimestamp: number;
     processed: number;
+    deleted: number;
     date: string;
     status: OperationRecordStatus;
     message: string;

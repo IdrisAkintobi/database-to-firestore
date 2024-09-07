@@ -10,6 +10,7 @@ export class OperationRecordService extends FirestoreRepository {
         lastKey: '',
         lastTimestamp: 0,
         processed: 0,
+        deleted: 0,
         date: new Date().toLocaleDateString('en-US').replaceAll('/', '-') + '_' + process.ppid,
         status: OperationRecordStatus.IDLE,
         message: '',
@@ -31,6 +32,7 @@ export class OperationRecordService extends FirestoreRepository {
             ...this.operationRecord,
             ...updateData,
             processed: this.operationRecord.processed + (updateData.processed || 0),
+            deleted: this.operationRecord.deleted + (updateData.deleted || 0),
         };
         await this.save();
     }

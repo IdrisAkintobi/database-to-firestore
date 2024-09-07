@@ -1,5 +1,5 @@
 import { firestore } from 'firebase-admin';
-import { UserDto } from '../../mysql/dto/user/user.dto';
+import { UserDto } from '../../mysql/dto/user.dto';
 
 export class FirestoreRepository {
     protected removeUndefinedFields(payload: UserDto | Record<string, unknown>): void {

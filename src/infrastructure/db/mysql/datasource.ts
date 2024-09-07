@@ -9,6 +9,7 @@ export const DBDataSource = new DataSource({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     entities: [__dirname + '/entities/**/*{.ts,.js}'],
+    migrations: [`${__dirname}/**/migrations/*.{ts,js}`],
     synchronize: false,
     poolSize: 10,
     maxQueryExecutionTime: 1500,

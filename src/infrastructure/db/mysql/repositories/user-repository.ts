@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { DBUserRepositoryInterface } from 'src/domain/interface/repositories/user-repository.interface';
-import { UserDto } from '../dto/user/user.dto';
+import { DBUserRepositoryInterface } from '../../../../domain/interface/repositories/user-repository.interface';
+import { UserDto } from '../dto/user.dto';
 import { UserEntity } from '../entities/user.entity';
 
 @Injectable()

@@ -19,9 +19,10 @@
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "typeorm": "ts-node ./node_modules/.bin/typeorm",
-        "typeorm:generate-migration": "npm run typeorm migration:generate -- -n update",
-        "typeorm:run": "npm run typeorm migration:run -- -d ./src/infrastructure/db/postgres/datasource.ts",
-        "typeorm:create-migration": "npm run typeorm migration:create -- -n manual-migration"
+        "typeorm:generate-migration": "npm run typeorm migration:generate ./src/infrastructure/db/mysql/migrations/ -- -d ./src/infrastructure/db/mysql/datasource.ts",
+        "typeorm:run": "npm run typeorm migration:run -- -d ./src/infrastructure/db/mysql/datasource.ts",
+        "typeorm:create-migration": "npm run typeorm migration:create -- -n manual-migration",
+        "migrate:from:cloud": "npx typeorm-model-generator -h 34.67.244.249 -d wiflix -u production -x wCzpF4jeLaTudg23VtmH -e mysql"
     },
     "dependencies": {
         "@nestjs/common": "^10.0.0",
