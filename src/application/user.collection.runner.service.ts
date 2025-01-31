@@ -8,7 +8,7 @@ import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { lastKey: process.env.LAST_KEY || '', batchSize: 500 };
+    record = { lastKey: process.env.LAST_KEY || '', batchSize: 1000 };
     private collectionRef: firestore.CollectionReference;
 
     constructor(
@@ -26,6 +26,7 @@ export class UserCollectionRunnerService {
         try {
             await this.updateQueryBatch();
         } catch (error) {
+            console.error('Error updating user collection', error);
             await this.operationRecordService.updateOperationRecord({
                 status: OperationRecordStatus.ERROR,
                 message: error['message'],
@@ -78,6 +79,9 @@ export class UserCollectionRunnerService {
                     problematicRecords.push(userEntities[i]);
                 }
             });
+
+            //sleep
+            await new Promise(r => setTimeout(r, 1000));
 
             if (problematicRecords.length) {
                 const dbBatch = firestore().batch();
