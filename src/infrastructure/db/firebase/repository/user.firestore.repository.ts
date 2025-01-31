@@ -3,7 +3,7 @@ import { firestore } from 'firebase-admin';
 
 import { AbstractUser } from '../../../../domain/abstract-user';
 import { UserFirebaseRepositoryInterface } from '../../../../domain/interface/repositories/user-firestore-repository.interface';
-import { UserDto } from '../../mysql/dto/user/user.dto';
+import { UserDto } from '../../../../domain/user.dto';
 import { UserEntity } from '../entity/user.entity';
 import { UserEntityMapper } from '../mapper/user-entity.mapper';
 import { FirestoreRepository } from './firestore-repository';

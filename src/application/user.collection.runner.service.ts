@@ -1,10 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { firestore } from 'firebase-admin';
 import { OperationRecordStatus } from '../domain/enum/operation-record.dto';
+import { UserDto } from '../domain/user.dto';
 import { FirebaseAdminRepository } from '../infrastructure/db/firebase/repository/firebase-admin';
 import { UsersFirestoreRepository } from '../infrastructure/db/firebase/repository/user.firestore.repository';
-import { UserDto } from '../infrastructure/db/mysql/dto/user/user.dto';
-import { UserRepository } from '../infrastructure/db/mysql/repositories/user-repository';
 import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
@@ -16,7 +15,6 @@ export class UserCollectionRunnerService {
         @Inject(FirebaseAdminRepository) private firebaseAdminRepository: FirebaseAdminRepository,
         private usersFirestoreRepository: UsersFirestoreRepository,
         @Inject(OperationRecordService) private operationRecordService: OperationRecordService,
-        @Inject('UserRepository') private userRepository: UserRepository,
     ) {}
 
     async updateUserCollection() {
@@ -67,19 +65,31 @@ export class UserCollectionRunnerService {
 
             const promiseArray: Array<Promise<unknown>> = [];
 
-            let canBreak = false;
             userEntities.forEach(({ id, email }) => {
                 if (email && this.isRegularEmail(email)) {
-                    console.log({ id, email });
-                    canBreak = true;
-                    // promiseArray.push(this.firebaseAdminRepository.updateUserEmail(id, email));
+                    promiseArray.push(this.firebaseAdminRepository.updateUserEmail(id, email));
                 }
             });
 
-            if (canBreak) break;
-            return;
+            const problematicRecords: Array<UserDto> = [];
+            const allSettled = await Promise.allSettled(promiseArray);
+            allSettled.forEach((v, i) => {
+                if (v.status === 'rejected') {
+                    problematicRecords.push(userEntities[i]);
+                }
+            });
 
-            await Promise.all(promiseArray);
+            if (problematicRecords.length) {
+                const dbBatch = firestore().batch();
+                const col = firestore().collection('problematic-users');
+
+                problematicRecords.forEach(record => {
+                    const docRef = col.doc(record.id);
+                    dbBatch.set(docRef, record);
+                });
+                // Commit the batch
+                await dbBatch.commit();
+            }
 
             this.record.lastKey = userEntities[userEntities.length - 1].id;
             await this.operationRecordService.updateOperationRecord({
