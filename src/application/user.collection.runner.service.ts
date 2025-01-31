@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { database } from 'firebase-admin';
-
+import { firestore } from 'firebase-admin';
 import { OperationRecordStatus } from '../domain/enum/operation-record.dto';
 import { FirebaseAdminRepository } from '../infrastructure/db/firebase/repository/firebase-admin';
 import { UsersFirestoreRepository } from '../infrastructure/db/firebase/repository/user.firestore.repository';
@@ -10,8 +9,8 @@ import { OperationRecordService } from './operation.record.service';
 
 @Injectable()
 export class UserCollectionRunnerService {
-    record = { lastKey: process.env.LAST_KEY || '', batchSize: 1000 };
-    private collectionRef: database.Query;
+    record = { lastKey: process.env.LAST_KEY || '', batchSize: 500 };
+    private collectionRef: firestore.CollectionReference;
 
     constructor(
         @Inject(FirebaseAdminRepository) private firebaseAdminRepository: FirebaseAdminRepository,
@@ -21,10 +20,7 @@ export class UserCollectionRunnerService {
     ) {}
 
     async updateUserCollection() {
-        if (!this.collectionRef) {
-            this.collectionRef = database().ref('users').orderByKey();
-        }
-
+        this.collectionRef = firestore().collection('users');
         await this.operationRecordService.updateOperationRecord({
             status: OperationRecordStatus.RUNNING,
         });
@@ -40,36 +36,52 @@ export class UserCollectionRunnerService {
     }
 
     private async updateQueryBatch() {
-        let query: database.Query;
+        let query: firestore.Query;
 
         while (true) {
             if (this.record.lastKey) {
                 query = this.collectionRef
-                    .startAfter(`${this.record.lastKey}`)
-                    .limitToFirst(this.record.batchSize + 1);
+                    .orderBy(firestore.FieldPath.documentId())
+                    .startAfter(this.record.lastKey)
+                    .limit(this.record.batchSize);
             } else {
-                query = this.collectionRef.limitToFirst(this.record.batchSize);
+                query = this.collectionRef
+                    .orderBy(firestore.FieldPath.documentId())
+                    .limit(this.record.batchSize);
             }
 
-            const snapshot = await query.once('value');
-            if (!snapshot.exists()) {
+            const snapshot = await query.get();
+            if (snapshot.empty) {
                 await this.operationRecordService.updateOperationRecord({
                     status: OperationRecordStatus.DONE,
                 });
                 break;
             }
-            const usersData = snapshot.val();
-            const userEntities = Object.values(usersData) as UserDto[];
-            const userEntitiesKey = Object.keys(usersData);
 
-            for (let i = 0; i < userEntities.length; i++) {
-                userEntities[i].id ??= userEntitiesKey[i];
-            }
+            const userEntities: UserDto[] = [];
+            snapshot.forEach(doc => {
+                const userData = doc.data() as UserDto;
+                userData.id = doc.id;
+                userEntities.push(userData);
+            });
 
-            // await this.usersFirestoreRepository.saveMany(userEntities, userEntitiesKey);
-            await this.userRepository.saveMany(userEntities);
+            const promiseArray: Array<Promise<unknown>> = [];
+
+            let canBreak = false;
+            userEntities.forEach(({ id, email }) => {
+                if (email && this.isRegularEmail(email)) {
+                    console.log({ id, email });
+                    canBreak = true;
+                    // promiseArray.push(this.firebaseAdminRepository.updateUserEmail(id, email));
+                }
+            });
+
+            if (canBreak) break;
+            return;
+
+            await Promise.all(promiseArray);
+
             this.record.lastKey = userEntities[userEntities.length - 1].id;
-
             await this.operationRecordService.updateOperationRecord({
                 processed: userEntities.length,
                 lastKey: this.record.lastKey,
@@ -77,9 +89,15 @@ export class UserCollectionRunnerService {
         }
     }
 
-    private isRegularEmail(email: string) {
-        // ensure email is not a like of +2348068098631@wi-flix
+    private isRegularEmail(email: string): boolean {
+        const isValidEmailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        if (!isValidEmailFormat) {
+            return false;
+        }
+
         const [emailId, domain] = email.split('@');
-        return !domain.match(/wi-flix.com$/) && !emailId.match(/^\+\d+$/);
+        const isWiFlixDomain = domain === 'wi-flix.com' || domain.endsWith('.wi-flix.com');
+        const isPhoneNumberLikeEmailId = /^\+\d+$/.test(emailId);
+        return !isWiFlixDomain && !isPhoneNumberLikeEmailId;
     }
 }

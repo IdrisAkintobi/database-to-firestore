@@ -15,6 +15,10 @@ export class FirebaseAdminRepository {
         return auth().getUser(uid);
     }
 
+    async getUsers(uidArray: { uid: string }[]): Promise<auth.GetUsersResult> {
+        return auth().getUsers(uidArray);
+    }
+
     async updateUserEmail(uid: string, email: string): Promise<auth.UserRecord> {
         return auth().updateUser(uid, { email });
     }
